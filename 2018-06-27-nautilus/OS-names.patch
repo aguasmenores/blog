@@ -1,0 +1,64 @@
+Description: nautilus compress dialog OS names changes
+ Modify the text line saying to which OSes is better suited a 
+ compression format. Concretely, change Linux to GNU/Linux and
+ Mac to MacOS
+ .
+ nautilus (1:3.26.3-0agmenores0) UNRELEASED; urgency=medium
+ .
+   * src/resources/ui/nautilus-compress-dialog.ui,
+     src/po/es.po:
+     - Linux -> GNU/Linux, Mac -> MacOS
+Author: Agmenores <aguasmenores@protonmail.com>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: https://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: 2018-06-27
+
+--- nautilus-3.26.3.orig/po/es.po
++++ nautilus-3.26.3/po/es.po
+@@ -5539,12 +5539,12 @@ msgid "Compatible with all operating sys
+ msgstr "Compatible con todos los sistemas operativos."
+ 
+ #: src/resources/ui/nautilus-compress-dialog.ui:131
+-msgid "Smaller archives but Linux and Mac only."
+-msgstr "Archivadores más pequeños pero sólo para Linux y Mac."
++msgid "Smaller archives but GNU/Linux and MacOS only."
++msgstr "Archivadores más pequeños pero sólo para GNU/Linux y MacOS."
+ 
+ #: src/resources/ui/nautilus-compress-dialog.ui:144
+-msgid "Smaller archives but must be installed on Windows and Mac."
+-msgstr "Archivadores más pequeños pero se puede instalar en Windows y Mac."
++msgid "Smaller archives but must be installed on Windows and MacOS."
++msgstr "Archivadores más pequeños pero se puede instalar en Windows y MacOS."
+ 
+ # src/file-manager/fm-directory-view.c:2140
+ # src/file-manager/fm-directory-view.c:2257
+--- nautilus-3.26.3.orig/src/resources/ui/nautilus-compress-dialog.ui
++++ nautilus-3.26.3/src/resources/ui/nautilus-compress-dialog.ui
+@@ -128,7 +128,7 @@
+             <child>
+               <object class="GtkLabel" id="tar_xz_description_label">
+                 <property name="visible">True</property>
+-                <property name="label" translatable="yes">Smaller archives but Linux and Mac only.</property>
++                <property name="label" translatable="yes">Smaller archives but GNU/Linux and MacOS only.</property>
+                 <property name="xalign">0</property>
+                 <style>
+                   <class name="dim-label"/>
+@@ -141,7 +141,7 @@
+             <child>
+               <object class="GtkLabel" id="seven_zip_description_label">
+                 <property name="visible">True</property>
+-                <property name="label" translatable="yes">Smaller archives but must be installed on Windows and Mac.</property>
++                <property name="label" translatable="yes">Smaller archives but must be installed on Windows and MacOS.</property>
+                 <property name="xalign">0</property>
+                 <style>
+                   <class name="dim-label"/>
