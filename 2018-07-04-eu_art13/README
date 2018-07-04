@@ -1,0 +1,14 @@
+Script Python
+-------------
+
+Ejecutar desde la consola de comandos:
+
+./mep-data.py
+
+El script escribirá cuatro archivos:
+* contact_info.tsv : Contiene la información de contacto de cada eurodiputado, uno por línea.
+* mails.csv : El listado de correos electrónicos, separados por comas.
+* fbs.tsv : El listado de direcciones de perfiles de Facebook, separados por tabuladores.
+* tw.tsv : El listado de direcciones de perfiles de Twitter, separados por tabuladores.
+
+Este script está bajo licencia GPLv3, la misma que la del resto del código publicado en este repositorio.
