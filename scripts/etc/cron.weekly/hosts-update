@@ -1,6 +1,7 @@
 #!/bin/bash
 BL_FILE=/tmp/hosts-zero
 BL_URL=http://someonewhocares.org/hosts/zero/hosts
+
 wget -O ${BL_FILE} ${BL_URL}
 if [[ 0 -eq $? && -f /etc/hosts-original ]]; then
     INVALID=$(egrep '^[ ]*[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' ${BL_FILE} | egrep -v '(0\.0\.0\.0|127\.0\.0\.1|255\.255\.255\.255)' | wc -l)
@@ -8,9 +9,16 @@ if [[ 0 -eq $? && -f /etc/hosts-original ]]; then
         /usr/bin/logger -p 'cron.err' 'Update of hosts file failed. Unknown IPs found.'
         exit 1
     fi
-    /usr/bin/logger -p 'cron.info' 'Updating hosts file with http://someonewhocares.org/hosts/zero/hosts'
+    /usr/bin/logger -p 'cron.info' "Updating hosts file with ${BL_URL}"
     cat /etc/hosts-original /tmp/hosts-zero > /etc/hosts
     rm /tmp/hosts-zero
 else
     /usr/bin/logger -p 'cron.err' 'Update of hosts file failed. Please check that Internet is available and that /etc/hosts-original exists.'
 fi
+
+
+# Other black lists:
+# http://winhelp2002.mvps.org/hosts.txt
+# https://adaway.org/hosts.txt
+# https://pgl.yoyo.org/adservers/serverlist.php?hostformat=hosts&showintro=1&mimetype=plaintext
+# https://www.malwaredomainlist.com/hostslist/hosts.txt
