@@ -2,9 +2,8 @@
 wget -O /tmp/hosts-zero http://someonewhocares.org/hosts/zero/hosts
 if [[ 0 -eq $? && -f /etc/hosts-original ]]; then
     /usr/bin/logger -p 'cron.info' 'Updating hosts file with http://someonewhocares.org/hosts/zero/hosts'
-    cp /etc/hosts-original /etc/hosts
-    cat /tmp/hosts-zero >> /etc/hosts
+    cat /etc/hosts-original /tmp/hosts-zero > /etc/hosts
     rm /tmp/hosts-zero
 else
-    /usr/bin/logger -p 'cron.err' 'Update of hosts file failed. Please check that Internet available and that /etc/hosts-original exists.'
+    /usr/bin/logger -p 'cron.err' 'Update of hosts file failed. Please check that Internet is available and that /etc/hosts-original exists.'
 fi
