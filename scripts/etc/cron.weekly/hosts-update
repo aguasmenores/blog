@@ -2,9 +2,57 @@
 BL_FILE=/tmp/hosts-zero
 BL_URL=http://someonewhocares.org/hosts/zero/hosts
 
+IPV4_BLOCK="(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])"
+REGEX_IPV4="(${IPV4_BLOCK}\.){3,3}${IPV4_BLOCK}"
+
+IPV6_BLOCK="[0-9a-fA-F]{1,4}"
+REGEX_IPV6="(${IPV6_BLOCK}:){7,7}${IPV6_BLOCK}|"
+REGEX_IPV6="${REGEX_IPV6}(${IPV6_BLOCK}:){1,7}:|"
+REGEX_IPV6="${REGEX_IPV6}(${IPV6_BLOCK}:){1,6}:${IPV6_BLOCK}|"
+REGEX_IPV6="${REGEX_IPV6}(${IPV6_BLOCK}:){1,5}(:${IPV6_BLOCK}){1,2}|"
+REGEX_IPV6="${REGEX_IPV6}(${IPV6_BLOCK}:){1,4}(:${IPV6_BLOCK}){1,3}|"
+REGEX_IPV6="${REGEX_IPV6}(${IPV6_BLOCK}:){1,3}(:${IPV6_BLOCK}){1,4}|"
+REGEX_IPV6="${REGEX_IPV6}(${IPV6_BLOCK}:){1,2}(:${IPV6_BLOCK}){1,5}|"
+REGEX_IPV6="${REGEX_IPV6}${IPV6_BLOCK}:((:${IPV6_BLOCK}){1,6})|"
+REGEX_IPV6="${REGEX_IPV6}:((:${IPV6_BLOCK}){1,7}|:)|"
+REGEX_IPV6="${REGEX_IPV6}[fF][eE]08:(:${IPV6_BLOCK}){2,2}%[0-9a-zA-Z]{1,}|"
+REGEX_IPV6="${REGEX_IPV6}::([fF]{4,4}(:0{1,4}){0,1}:){0,1}${REGEX_IPV4}|"
+REGEX_IPV6="${REGEX_IPV6}(${IPV6_BLOCK}:){1,4}:${REGEX_IPV4}"
+
+function unit_test() {
+    ipv4_set=("0.0.0.0" "127.0.0.1" "255.255.255.255" "256.254.253.252" "255.255.255.256" "255.255.2555.252" "255.255.25.252")
+    ipv4_wc=(1 1 1 0 0 0 1)
+    ipv6_set=("fe80::e484:21:bfb3:9fc1" "fz80:fd490::1" "::1" "abcd:3040::1" "ABCD::0" "repeat::again::0" "2001:0DB8:0::0:1428:192.0.1.1" "2001:0db8::0:192.0.1.1")
+    ipv6_wc=(1 0 1 0 1 0 0 1)
+    
+    i=0
+    for ipv4 in ${ipv4_set}; do
+        output=$(echo ${ipv4} | egrep "${REGEX_IPV4}" | wc -l)
+        if [ ${output} -ne ${ipv4_wc[${i}]} ]; then
+            echo "Error: ${ipv4} should output ${ipv4_wc[${i}]} but it resulted in ${output}."
+            exit 1
+        fi
+        i=$(expr $i+1)
+    done
+    i=0
+    for ipv6 in ${ipv6_set}; do
+        output=$(echo ${ipv6} | egrep "${REGEX_IPV6}" | wc -l)
+        if [ ${output} -ne ${ipv6_wc[${i}]} ]; then
+            echo "Error: ${ipv6} should output ${ipv6_wc[${i}]} but it resulted in ${output}."
+            exit 1
+        fi
+        i=$(expr $i+1)
+    done
+}
+
+if [ x${1} = x"test" ]; then
+    unit_test
+    exit 0
+fi
+
 wget -O ${BL_FILE} ${BL_URL}
 if [[ 0 -eq $? && -f /etc/hosts-original ]]; then
-    INVALID=$(egrep '^[ ]*[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' ${BL_FILE} | egrep -v '(0\.0\.0\.0|127\.0\.0\.1|255\.255\.255\.255)' | wc -l)
+    INVALID=$(egrep "^[ ]*(${REGEX_IPV4}|${REGEX_IPV6})" ${BL_FILE} | egrep -v '(0\.0\.0\.0|127\.0\.[01]\.1|255\.255\.255\.255|::[01]|[fF][eE][fF]0[02]::[0-3])' | wc -l)
     if [ ${INVALID} -ne 0 ]; then
         /usr/bin/logger -p 'cron.err' 'Update of hosts file failed. Unknown IPs found.'
         exit 1
