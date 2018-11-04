@@ -52,7 +52,7 @@ fi
 
 wget -O ${BL_FILE} ${BL_URL}
 if [[ 0 -eq $? && -f /etc/hosts-original ]]; then
-    INVALID=$(egrep "^[ ]*(${REGEX_IPV4}|${REGEX_IPV6})" ${BL_FILE} | egrep -v '(0\.0\.0\.0|127\.0\.[01]\.1|255\.255\.255\.255|::[01]|[fF][eE][fF]0[02]::[0-3])' | wc -l)
+    INVALID=$(egrep "^[ ]*(${REGEX_IPV4}|${REGEX_IPV6})" ${BL_FILE} | egrep -v '(0\.0\.0\.0|127\.0\.[01]\.1|255\.255\.255\.255|::[01]*|[fF][eEfF]0[02]::[0-3])' | wc -l)
     if [ ${INVALID} -ne 0 ]; then
         /usr/bin/logger -p 'cron.err' 'Update of hosts file failed. Unknown IPs found.'
         exit 1
