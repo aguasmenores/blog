@@ -2,6 +2,9 @@
 BL_FILE=/tmp/hosts-zero
 BL_URL=https://someonewhocares.org/hosts/zero/hosts
 
+MSG_INFO="El fitxer /etc/hosts ha estat actualitzat."
+MSG_ERR="No s'ha pogut actualitzar el fitxer /etc/hosts. Consulta /var/syslog."
+NOTIFY=notify-send
 
 WS="\b(?=\w)"
 WE="\b(?<=\w)"
@@ -49,6 +52,28 @@ function unit_test() {
     done
 }
 
+
+function notify_users() {
+    msg=${1}
+    urgency=${2}
+    if [ -z "$(which ${NOTIFY})" ]; then
+        return
+    fi
+    if [ -z "${urgency}" ]; then
+        urgency="low"
+    fi
+    online=$(who | cut -d' ' -f1)
+    displays=($(who | gawk 'BEGIN{FS="[[:space:]]*"}/[:alnum:]/{printf "%s ", $2}END{}'))
+    i=0
+    for u in ${online}; do
+        uid=$(id -u ${u})
+        disp=${displays[${i}]}
+        su -c "env DISPLAY=\"${disp}\" DBUS_SESSION_BUS_ADDRESS=\"unix:path=/run/user/${uid}/bus\" ${NOTIFY} -u \"${urgency}\" \"${msg}\"" ${u}
+        i=$(expr $i + 1)
+    done
+}
+
+
 if [ x${1} = x"test" ]; then
     unit_test
     exit 0
@@ -62,13 +87,17 @@ if [[ 0 -eq $? && -f /etc/hosts-original ]]; then
             | wc -l)
     if [ ${INVALID} -ne 0 ]; then
         /usr/bin/logger -p 'cron.err' 'Update of hosts file failed. Unknown IPs found.'
+        notify_users "${MSG_ERR}" "critical"
         exit 1
     fi
     /usr/bin/logger -p 'cron.info' "Updating hosts file with ${BL_URL}"
     cat /etc/hosts-original /tmp/hosts-zero > /etc/hosts
     rm /tmp/hosts-zero
+    /usr/bin/logger -p 'cron.info' "Hosts file updated with ${BL_URL}"
+    notify_users "${MSG_INFO}" "low"
 else
     /usr/bin/logger -p 'cron.err' 'Update of hosts file failed. Please check that Internet is available and that /etc/hosts-original exists.'
+    notify_users "${MSG_ERR}" "critical"
 fi
 
 
