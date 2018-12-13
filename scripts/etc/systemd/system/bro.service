@@ -1,0 +1,13 @@
+[Unit]
+Description=bro - passive network traffic analyzer
+After=network-pre.target
+
+[Service]
+Type=forking
+PIDFile=/var/spool/bro/bro/.pid
+ExecStart=/usr/bin/broctl start
+ExecStop=/usr/bin/broctl stop
+ExecReload=/usr/bin/broctl deploy
+
+[Install]
+WantedBy=multi-user.target
