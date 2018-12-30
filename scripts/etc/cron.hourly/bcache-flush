@@ -1,0 +1,78 @@
+#!/bin/bash
+
+NOTIFY=notify-send
+MUTE=true
+LOG_ID="BCACHE FLUSH"
+
+TIMER=15
+WB_PERCENT=40
+
+function notify_users() {
+    if [ $MUTE == "true" ]; then
+        return
+    fi
+    msg=${1}
+    urgency=${2}
+    if [ -z "$(which ${NOTIFY})" ]; then
+        return
+    fi
+    if [ -z "${urgency}" ]; then
+        urgency="low"
+    fi
+    online=$(who | cut -d' ' -f1)
+    displays=($(who | gawk 'BEGIN{FS="[[:space:]]*"}/[:alnum:]/{printf "%s ", $2}END{}'))
+    i=0
+    for u in ${online}; do
+        uid=$(id -u ${u})
+        disp=${displays[${i}]}
+        su -c "env DISPLAY=\"${disp}\" DBUS_SESSION_BUS_ADDRESS=\"unix:path=/run/user/${uid}/bus\" ${NOTIFY} -u \"${urgency}\" \"${msg}\"" ${u}
+        i=$(expr $i + 1)
+    done
+}
+
+
+i=0
+for bdev in /sys/block/bcache*; do
+    if [[ -z "$bdev" || ! -d $bdev ]]; then
+        continue
+    fi
+    wb_percent=$bdev/bcache/writeback_percent
+    if [[ "$(cat $bdev/bcache/state)" == "dirty" ]]; then
+        echo 0 > $bdev/bcache/writeback_percent
+        echo writethrough > $bdev/bcache/cache_mode
+        i=$((i + 1))
+    elif [[ $wb_percent -eq 0 ]]; then
+        echo writeback > $bdev/bcache/cache_mode
+        echo $WB_PERCENT > $bdev/bcache/writeback_percent
+    fi
+done
+
+if [ $i -eq 0 ]; then
+    /usr/bin/logger -p 'cron.info' '${LOG_ID}: There are no dirty bcache devices.'
+    exit 0
+fi
+
+/usr/bin/logger -p 'cron.info' "${LOG_ID}: Cleaning cache of bcache devices."
+notify_users "Iniciant neteja de les memòries cau dels dispositius bcache." "low"
+
+i=0
+for bdev in /sys/block/bcache*; do
+    if [[ -z $bdev || ! -d $bdev ]]; then
+        continue
+    fi
+    while [ "$(cat $bdev/bcache/state)" == "dirty" ]; do
+        sleep ${TIMER};
+    done
+    echo $WB_PERCENT > $bdev/bcache/writeback_percent
+    echo writeback > $bdev/bcache/cache_mode
+    i=$((i + 1))
+done
+
+if [ $i -eq 0 ]; then
+    /usr/bin/logger -p 'cron.info' '${LOG_ID}: Cleaning has not been done.'
+    notify_users "La neteja dels dispositius bcache no s'ha realitzat."
+    exit 0
+fi
+
+/usr/bin/logger -p 'cron.info' "${LOG_ID}: Cache of bcache devices cleaned."
+notify_users "S'han netejat les memòries cau dels dispositius bcache." "low"

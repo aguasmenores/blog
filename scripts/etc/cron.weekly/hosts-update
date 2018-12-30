@@ -5,6 +5,7 @@ BL_URL=https://someonewhocares.org/hosts/zero/hosts
 MSG_INFO="El fitxer /etc/hosts ha estat actualitzat."
 MSG_ERR="No s'ha pogut actualitzar el fitxer /etc/hosts. Consulta /var/syslog."
 NOTIFY=notify-send
+LOG_ID="HOSTS UPDATE"
 
 WS="\b(?=\w)"
 WE="\b(?<=\w)"
@@ -86,17 +87,17 @@ if [[ 0 -eq $? && -f /etc/hosts-original ]]; then
             | grep -Pv '(?i)(0\.0\.0\.0|127\.0\.[01]\.1|255\.255\.255\.255|::[01]*|f[ef]0[02]::[0-3])'\
             | wc -l)
     if [ ${INVALID} -ne 0 ]; then
-        /usr/bin/logger -p 'cron.err' 'Update of hosts file failed. Unknown IPs found.'
+        /usr/bin/logger -p 'cron.err' '${LOG_ID}: Update of hosts file failed. Unknown IPs found.'
         notify_users "${MSG_ERR}" "critical"
         exit 1
     fi
-    /usr/bin/logger -p 'cron.info' "Updating hosts file with ${BL_URL}"
+    /usr/bin/logger -p 'cron.info' "${LOG_ID}: Updating hosts file with ${BL_URL}"
     cat /etc/hosts-original /tmp/hosts-zero > /etc/hosts
     rm /tmp/hosts-zero
-    /usr/bin/logger -p 'cron.info' "Hosts file updated with ${BL_URL}"
+    /usr/bin/logger -p 'cron.info' "${LOG_ID}: Hosts file updated with ${BL_URL}"
     notify_users "${MSG_INFO}" "low"
 else
-    /usr/bin/logger -p 'cron.err' 'Update of hosts file failed. Please check that Internet is available and that /etc/hosts-original exists.'
+    /usr/bin/logger -p 'cron.err' '${LOG_ID}: Update of hosts file failed. Please check that Internet is available and that /etc/hosts-original exists.'
     notify_users "${MSG_ERR}" "critical"
 fi
 
