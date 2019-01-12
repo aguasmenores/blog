@@ -71,3 +71,5 @@ make -j $NPROC
 $SUDO make install
 
 cd $CWD
+
+$SUDO adduser --system --group qbtuser
