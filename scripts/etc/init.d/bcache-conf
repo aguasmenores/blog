@@ -1,0 +1,34 @@
+#!/lib/init/init-d-script
+### BEGIN INIT INFO
+# Provides:          bcache_config
+# Required-Start:    $local_fs
+# Required-Stop:     
+# Default-Start:     1 2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Bcache driver configuration
+# Description:       Debian init script to update the
+#                    configuration of the Bcache driver.
+### END INIT INFO
+DAEMON=none
+CSET_UUID=
+
+do_start_cmd_override() {
+    echo 32M > /sys/block/bcache0/bcache/sequential_cutoff
+    echo writeback > /sys/block/bcache0/bcache/cache_mode
+    echo 40 > /sys/block/bcache0/bcache/writeback_percent
+    echo 60 > /sys/block/bcache0/bcache/writeback_delay
+    echo 0 > /sys/fs/bcache/$CSET_UUID/congested_read_threshold_us
+    echo 0 > /sys/fs/bcache/$CSET_UUID/congested_write_threshold_us
+}
+
+do_stop_cmd_override() {
+}
+
+do_status_override() {
+    cat /sys/block/bcache0/bcache/sequential_cutoff
+    cat /sys/block/bcache0/bcache/cache_mode
+    cat /sys/block/bcache0/bcache/writeback_percent
+    cat /sys/block/bcache0/bcache/writeback_delay
+    cat /sys/fs/bcache/$CSET_UUID/congested_read_threshold_us
+    cat /sys/fs/bcache/$CSET_UUID/congested_write_threshold_us
+}
