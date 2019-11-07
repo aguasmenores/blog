@@ -83,10 +83,12 @@ function setVideo(lang,vl_stream,vl_bitrate,streamId,bitrate) {
     vl_bitrate[lang] = bitrate
 }
 
-function setAudio(lang,streamId,bitrate,channels,codec,cname,profile) {
+function setAudio(lang,streamId,bitrate,channels,ch_dist,freq,codec,cname,profile) {
     al_stream[lang] = streamId
     al_bitrate[lang] = bitrate
     al_channels[lang] = channels
+    al_ch_dist[lang] = ch_dist
+    al_freq[lang] = freq
     al_codec_short[lang] = codec
     al_codec_long[lang] = cname
     al_profile[lang] = profile
@@ -108,8 +110,12 @@ function max(a,b) {
     return (a > b) ? a : b;
 }
 
+function min(a,b) {
+    return (a < b) ? a : b;
+}
+
 function getBitrate(curr_bitrate) {
-    if (curr_bitrate !~ /N\/A/) return int(max(1024000,curr_bitrate)/2)
+    if (curr_bitrate !~ /N\/A/) return int(min(1024000,curr_bitrate)/2)
     else return 512000
 }
 
@@ -199,9 +205,9 @@ function single_process_encoding_x265_8bit() {
     ffmpeg_av = setStartDuration(ffmpeg_av,0,duration)
     gsub(/-map 1:/,"-map 0:",s_maps)
     ffmpeg_cmd = ffmpeg_av " -i " "'INPUT_FILE'" \
-        " -vcodec libx265 -qmin 0 -qmax 46 -crf 20 " \
+        " -vcodec libx265 -qmin 0 -qmax 46 -crf 21.5 " \
         " -profile:v main -preset:v slower -tune grain -x265-params " \
-        "  ctu=32:aq-mode=3:aq-strength=1:cutree=1:rskip=1 " \
+        "  ctu=32:aq-mode=3:aq-strength=1.0:cutree=1:rskip=1 " \
         EXTRAPARAMS " " \
         v_maps a_maps s_maps " -scodec copy -map_metadata 0 " \
         " -y " "'TRANSCODED_FILE'"
@@ -355,7 +361,8 @@ BEGIN {
                         channels = kv[2]
                         break;
                     case "channel_layout":
-                        channel_distribution = kv[2]
+                        pos = match(kv[2],/[[:digit:]]+\.[[:digit:]]+/,arr)
+                        ch_dist = arr[0]
                         break;
                     case "bit_rate":
                         bitrate = kv[2]
@@ -375,10 +382,10 @@ BEGIN {
             if (codec_type ~ /audio/) {
                 if (lang in al_stream) {
                     if ((streamId != al_stream[lang]) && (al_bitrate[lang] < bitrate) && (al_channels[lang] <= channels) && ( codec_short ~ /dts/ || profile ~ /DTS-HD/)) {
-                        setAudio(lang,streamId,bitrate,channels,codec_short,codec_long,profile)
+                        setAudio(lang,streamId,bitrate,channels,ch_dist,freq,codec_short,codec_long,profile)
                     }
                 } else {
-                    setAudio(lang,streamId,bitrate,channels,codec_short,codec_long,profile)
+                    setAudio(lang,streamId,bitrate,channels,ch_dist,freq,codec_short,codec_long,profile)
                 }
             }
     
@@ -424,7 +431,10 @@ BEGIN {
                 " " getBitrate(al_bitrate[pref_lang]) " -ac:1 " \
                 al_channels[pref_lang] " -mapping_family:"current_index \
                 " " getOpusChannelFamily(al_channels[pref_lang]) \
-                " -disposition:" al_stream[pref_lang] " default "
+                " -disposition:" al_stream[pref_lang] " default " \
+                " -metadata:"al_stream[pref_lang] " title=\"["pref_lang"] Opus " \
+                al_ch_dist[pref_lang] "ch " \
+                freq/1000 "kHz\" "
             current_index++
         }
         print "Selected audio streams:"
@@ -435,7 +445,11 @@ BEGIN {
                 a_maps = a_maps " -codec:" current_index " libopus -map 0:" al_stream[al] " -b:" current_index " " \
                     opus_bitrate " -ac:" current_index " " al_channels[al] \
                     " -mapping_family:" current_index " " getOpusChannelFamily(al_channels[al]) \
-                    " -disposition:" al_stream[al] " none "
+                    " -disposition:" al_stream[al] " none " \
+                    " -metadata:"al_stream[al] \
+                    " title=\"["al"] Opus " \
+                    al_ch_dist[al] "ch " \
+                    freq/1000 "kHz\" "
                 current_index++
             }
         }
@@ -443,7 +457,8 @@ BEGIN {
     if (length(sl_stream) > 0) {
         print "Selected subtitle streams:"
         if (pref_lang in sl_stream) {
-            s_maps = s_maps " -map 1:" sl_stream[pref_lang] " -disposition:" sl_stream[pref_lang] " default "
+            s_maps = s_maps " -map 1:" sl_stream[pref_lang] " -disposition:" sl_stream[pref_lang] " default " "-metadata:"sl_stream[pref_lang] \
+                " title=\"["pref_lang"] " sl_codec_short[pref_lang]
         }
         printf "language=%s,codec_short=%s,codec_long=%s,frames=%s\n",pref_lang,sl_codec_short[pref_lang],sl_codec_long[pref_lang],sl_frames[pref_lang]
         for (sl in sl_stream) {
@@ -452,7 +467,8 @@ BEGIN {
                 && sl !~ /spa/ \
                 && sl !~ /eng/) delete sl_stream[sl]
             else if (sl != pref_lang) {
-                s_maps = s_maps " -map 1:" sl_stream[sl] " -disposition:" sl_stream[sl] " none "
+                s_maps = s_maps " -map 1:" sl_stream[sl] " -disposition:" sl_stream[sl] " none " "-metadata:"sl_stream[pref_lang] \
+                " title=\"["pref_lang"] " sl_codec_short[pref_lang] "\""
                 printf "language=%s,codec_short=%s,codec_long=%s,frames=%s\n",sl,sl_codec_short[sl],sl_codec_long[sl],sl_frames[sl]
             }
         }
