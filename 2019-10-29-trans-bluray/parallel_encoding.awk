@@ -458,7 +458,7 @@ BEGIN {
         print "Selected subtitle streams:"
         if (pref_lang in sl_stream) {
             s_maps = s_maps " -map 1:" sl_stream[pref_lang] " -disposition:" sl_stream[pref_lang] " default " "-metadata:"sl_stream[pref_lang] \
-                " title=\"["pref_lang"] " sl_codec_short[pref_lang]
+                " title=\"["pref_lang"] " sl_codec_short[pref_lang] "\""
         }
         printf "language=%s,codec_short=%s,codec_long=%s,frames=%s\n",pref_lang,sl_codec_short[pref_lang],sl_codec_long[pref_lang],sl_frames[pref_lang]
         for (sl in sl_stream) {
