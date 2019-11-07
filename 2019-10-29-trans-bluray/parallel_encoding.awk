@@ -467,8 +467,8 @@ BEGIN {
                 && sl !~ /spa/ \
                 && sl !~ /eng/) delete sl_stream[sl]
             else if (sl != pref_lang) {
-                s_maps = s_maps " -map 1:" sl_stream[sl] " -disposition:" sl_stream[sl] " none " "-metadata:"sl_stream[pref_lang] \
-                " title=\"["pref_lang"] " sl_codec_short[pref_lang] "\""
+                s_maps = s_maps " -map 1:" sl_stream[sl] " -disposition:" sl_stream[sl] " none " "-metadata:"sl_stream[sl] \
+                " title=\"["sl"] " sl_codec_short[sl] "\""
                 printf "language=%s,codec_short=%s,codec_long=%s,frames=%s\n",sl,sl_codec_short[sl],sl_codec_long[sl],sl_frames[sl]
             }
         }
