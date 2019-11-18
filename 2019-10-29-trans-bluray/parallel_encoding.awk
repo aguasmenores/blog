@@ -86,8 +86,8 @@ function printSub(lang,sub_stream) {
 }
 
 function printAudio(lang,al_stream,al_bitrate,al_channels,al_codec,al_cname) {
-    printf "%s,%s,%s,%s,%s\n",lang,al_stream[lang],al_bitrate[lang],al_channels[lang],\
-al_codec[lang],al_cname[lang]
+    printf ("%s,%s,%s,%s,%s\n",lang,al_stream[lang],al_bitrate[lang],
+            al_channels[lang],al_codec[lang],al_cname[lang])
 }
 
 function setVideo(lang,vl_stream,vl_bitrate,streamId,bitrate) {
@@ -96,7 +96,8 @@ function setVideo(lang,vl_stream,vl_bitrate,streamId,bitrate) {
     vl_bitrate[lang] = bitrate
 }
 
-function setAudio(lang,streamId,bitrate,channels,ch_dist,freq,codec,cname,profile) {
+function setAudio(lang,streamId,bitrate,channels,ch_dist,freq,codec,cname,
+                  profile) {
     al_stream[lang] = streamId
     al_bitrate[lang] = bitrate
     al_channels[lang] = channels
@@ -139,10 +140,12 @@ function getBitrate(channels) {
 
 function setStartDuration(chunk,start,duration) {
     total_subs = gsub(/SEGSTART/,start,chunk)
-    assert(total_subs == 1, sprintf("FFMPEG segment start for chunk % has not been put.",idx))
+    assert(total_subs == 1,
+           sprintf("FFMPEG segment start for chunk % has not been put.",idx))
 
     total_subs = gsub(/SEGDUR/,duration,chunk)
-    assert(total_subs == 1, sprintf("FFMPEG segment duration for chunk %s has not been put.",idx))
+    assert(total_subs == 1,
+           sprintf("FFMPEG segment duration for chunk %s has not been put.",idx))
     return chunk
 }
 
@@ -197,10 +200,14 @@ function multiprocess_encoding_vp9_8bit() {
         ffmpeg_pass1 = ffmpeg_av_chunk
         ffmpeg_pass2 = ffmpeg_av_chunk
 
-        total_subs = gsub(/FFMPEGPASS/,"-pass 1 -an -passlogfile '" av_output_file "'",ffmpeg_pass1)
+        total_subs = gsub(/FFMPEGPASS/,
+                          "-pass 1 -an -passlogfile '" av_output_file "'",
+                          ffmpeg_pass1)
         assert(total_subs == 1, "FFMPEG pass 1 could not be configured")
 
-        total_subs = gsub(/FFMPEGPASS/,"-pass 2 -passlogfile '" av_output_file "'",ffmpeg_pass2)
+        total_subs = gsub(/FFMPEGPASS/,
+                          "-pass 2 -passlogfile '" av_output_file "'",
+                          ffmpeg_pass2)
         assert(total_subs == 1, "FFMPEG pass 2 could not be configured")
         print ffmpeg_pass1";"ffmpeg_pass2 > cmd_file
     }
@@ -210,11 +217,14 @@ function multiprocess_encoding_vp9_8bit() {
     for (i=0;i<processes;i++) {
         idx = sprintf("%03d",i)
         file_chunk_name = tmp_dir_name "/" filename "_chunk_" idx ".mkv"
-        assert(! stat(file_chunk_name,fstat), "No compressed AV files have been produced. Aborting.")
+        assert(! stat(file_chunk_name,fstat),
+               "No compressed AV files have been produced. Aborting.")
         print "file '"file_chunk_name"'" > concat_list
     }
 
-    ffmpeg_concat_cmd = "ffmpeg -f concat -safe 0 -i " concat_list " -i " "'"input_file"'" " -map 0 -c copy " s_maps " -map_metadata 1 -map_chapters 1 -c copy -y " "'"transcoded_file"'"
+    ffmpeg_concat_cmd = "ffmpeg -f concat -safe 0 -i " concat_list " -i " \
+        "'"input_file"'" " -map 0 -c copy " s_maps \
+        " -map_metadata 1 -map_chapters 1 -c copy -y " "'"transcoded_file"'"
     res = system(ffmpeg_concat_cmd)
     assert(res == 0, "FFMPEG exit status was not zero.")
 }
@@ -316,10 +326,15 @@ BEGIN {
     if (length(pref_lang) == 0) pref_lang = "spa"
     "nproc" | getline hwthreads
     "xdg-user-dir VIDEOS" | getline videos_dir
-    filename = gensub(/ /,"_","g",gensub(/\.mkv$/,"","g",basename(input_file))) "_out"
-    if (length(output_file) == 0) transcoded_file = videos_dir "/" filename "_transcoded.mkv"
-    else transcoded_file = dirname(output_file) "/" gensub(/ /,"_","g",basename(output_file))
-    ffprobe_cmd = "ffprobe -loglevel quiet -show_streams -show_format -show_chapters -of csv=nk=0 " "'"input_file"'"
+    filename = gensub(/ /,"_","g",
+                      gensub(/\.mkv$/,"","g",basename(input_file))) "_out"
+    if (length(output_file) == 0)
+        transcoded_file = videos_dir "/" filename "_transcoded.mkv"
+    else
+        transcoded_file = dirname(output_file) "/" \
+            gensub(/ /,"_","g",basename(output_file))
+    ffprobe_cmd = "ffprobe -loglevel quiet -show_streams -show_format"\
+        " -show_chapters -of csv=nk=0 " "'"input_file"'"
 
     while((ffprobe_cmd | getline) > 0)
     {
@@ -379,7 +394,8 @@ BEGIN {
                         channels = kv[2]
                         break;
                     case "channel_layout":
-                        pos = match(kv[2],/([[:digit:]]+\.[[:digit:]]+|stereo)/,arr)
+                        pos = match(kv[2],
+                                    /([[:digit:]]+\.[[:digit:]]+|stereo)/,arr)
                         if (arr[0] == "stereo") arr[0] = "2.0"
                         ch_dist = arr[0]
                         break;
@@ -400,24 +416,31 @@ BEGIN {
 
             if (codec_type ~ /audio/) {
                 if (lang in al_stream) {
-                    if ((streamId != al_stream[lang]) && (al_channels[lang] < channels)) {
-                        setAudio(lang,streamId,bitrate,channels,ch_dist,freq,codec_short,codec_long,profile)
+                    if ((streamId != al_stream[lang]) &&
+                        (al_channels[lang] < channels)) {
+                        setAudio(lang,streamId,bitrate,channels,ch_dist,
+                                 freq,codec_short,codec_long,profile)
                     }
                 } else {
-                    setAudio(lang,streamId,bitrate,channels,ch_dist,freq,codec_short,codec_long,profile)
+                    setAudio(lang,streamId,bitrate,channels,ch_dist,
+                             freq,codec_short,codec_long,profile)
                 }
             }
     
             if (codec_type ~ /subtitle/) {
                 if (lang in sl_stream) {
-                    if (codec_short ~ /hdmv/ && sl_codec_short[lang] !~ /hdmv/) {
+                    if (codec_short ~ /hdmv/ &&
+                        sl_codec_short[lang] !~ /hdmv/) {
                         setSub(lang,streamId,codec_short,codec_long,frames)
                     } else if (codec_short == sl_codec_short[lang]) {
                         if (frames > sl_frames[lang]) {
-                            setSubForced(lang,sl_stream[lang],sl_codec_short[lang],sl_codec_long[lang],sl_frames[lang])
+                            setSubForced(lang,sl_stream[lang],
+                                         sl_codec_short[lang],
+                                         sl_codec_long[lang],sl_frames[lang])
                             setSub(lang,streamId,codec_short,codec_long,frames)
                         } else if (frames < sl_frames[lang]) {
-                            setSubForced(lang,streamId,codec_short,codec_long,frames)
+                            setSubForced(lang,streamId,codec_short,
+                                         codec_long,frames)
                         }
                     }
                 } else setSub(lang,streamId,codec_short,codec_long,frames)
@@ -450,29 +473,37 @@ BEGIN {
     if (length(al_stream) > 0) {
         current_index = 1
         if (pref_lang in al_stream) {
+            channel_family= getOpusChannelFamily(al_channels[pref_lang])
+            surround = channel_family ? "Surround" : ""
             a_maps = a_maps " -codec:"current_index " libopus -map 0:"\
                 al_stream[pref_lang] " -b:"current_index \
                 " " getBitrate(al_channels[pref_lang]) " -ac:1 " \
                 al_channels[pref_lang] " -mapping_family:" current_index \
-                " " getOpusChannelFamily(al_channels[pref_lang]) \
+                " " channel_family \
                 " -disposition:" current_index " default " \
                 " -metadata:s:" current_index " title=\"["pref_lang"] Opus " \
-                al_ch_dist[pref_lang] " " \
+                al_ch_dist[pref_lang] " " surround " " \
                 freq/1000 "kHz\" "
             current_index++
         }
         print "Selected audio streams:"
         for (al in al_stream) {
-            printf "language=%s,bitrate=%s,channels=%d,codec_short=%s,codec_long=%s,profile=%s\n",al,al_bitrate[al],al_channels[al],al_codec_short[al],al_codec_long[al],al_profile[al]
+            printf ("language=%s,bitrate=%s,channels=%d,"\
+                    "codec_short=%s,codec_long=%s,profile=%s\n",al,
+                    al_bitrate[al],al_channels[al],al_codec_short[al],
+                    al_codec_long[al],al_profile[al])
             if (al != pref_lang) {
+                channel_family= getOpusChannelFamily(al_channels[al])
+                surround = channel_family ? "Surround" : ""
                 opus_bitrate = getBitrate(al_channels[al])
-                a_maps = a_maps " -codec:" current_index " libopus -map 0:" al_stream[al] " -b:" current_index " " \
+                a_maps = a_maps " -codec:" current_index \
+                    " libopus -map 0:" al_stream[al] " -b:" current_index " " \
                     opus_bitrate " -ac:" current_index " " al_channels[al] \
-                    " -mapping_family:" current_index " " getOpusChannelFamily(al_channels[al]) \
+                    " -mapping_family:" current_index " " channel_family \
                     " -disposition:" current_index " none " \
                     " -metadata:s:" current_index \
                     " title=\"["al"] Opus " \
-                    al_ch_dist[al] " " \
+                    al_ch_dist[al] " " surround " " \
                     freq/1000 "kHz\" "
                 current_index++
             }
@@ -481,28 +512,40 @@ BEGIN {
     if (length(sl_stream) > 0) {
         print "Selected subtitle streams:"
         if (pref_lang in sl_stream) {
-            s_maps = s_maps " -map 1:" sl_stream[pref_lang] " -disposition:" sl_stream[pref_lang] " default " "-metadata:s:"sl_stream[pref_lang] \
+            s_maps = s_maps " -map 1:" sl_stream[pref_lang] \
+                " -disposition:" current_index " none " \
+                "-metadata:s:"current_index             \
                 " title=\"["pref_lang"] " sl_codec_short[pref_lang] "\""
             current_index++
         }
 
-        printf "language=%s,codec_short=%s,codec_long=%s,frames=%s\n",pref_lang,sl_codec_short[pref_lang],sl_codec_long[pref_lang],sl_frames[pref_lang]
+        printf ("language=%s,codec_short=%s,codec_long=%s,frames=%s\n",
+                pref_lang,sl_codec_short[pref_lang],sl_codec_long[pref_lang],
+                sl_frames[pref_lang])
         for (sl in sl_stream) {
             if (!(sl in al_stream) \
                 && sl !~ /cat/ \
                 && sl !~ /spa/ \
                 && sl !~ /eng/) delete sl_stream[sl]
             else if (sl != pref_lang) {
-                s_maps = s_maps " -map 1:" sl_stream[sl] " -disposition:" current_index " none " "-metadata:s:" current_index \
-                " title=\"["sl"] " sl_codec_short[sl] "\""
-                printf "language=%s,codec_short=%s,codec_long=%s,frames=%s\n",sl,sl_codec_short[sl],sl_codec_long[sl],sl_frames[sl]
+                s_maps = s_maps " -map 1:" sl_stream[sl] \
+                    " -disposition:" current_index " none " \
+                    "-metadata:s:" current_index            \
+                    " title=\"["sl"] " sl_codec_short[sl] "\""
+                printf ("language=%s,codec_short=%s,codec_long=%s,frames=%s\n",
+                        sl,sl_codec_short[sl],sl_codec_long[sl],sl_frames[sl])
                 current_index++
             }
         }
         if (pref_lang in sl_stream_forced) {
-            printf "language=%s,codec_short=%s,codec_long=%s,frames=%s\n",pref_lang,sl_codec_short_forced[pref_lang],sl_codec_long_forced[pref_lang],sl_frames_forced[pref_lang]
-            s_maps = s_maps " -map 1:" sl_stream_forced[pref_lang] " -disposition:" current_index " none " "-metadata:s:" current_index \
-            " title=\"["pref_lang"] Forzados " sl_codec_short_forced[pref_lang] "\""
+            printf ("language=%s,codec_short=%s,codec_long=%s,frames=%s\n",
+                    pref_lang,sl_codec_short_forced[pref_lang],
+                    sl_codec_long_forced[pref_lang],sl_frames_forced[pref_lang])
+            s_maps = s_maps " -map 1:" sl_stream_forced[pref_lang] \
+                " -disposition:" current_index " default " \
+                "-metadata:s:" current_index                            \
+                " title=\"["pref_lang"] Forzados " \
+                sl_codec_short_forced[pref_lang] "\""
             current_index++
         }
         for (sl in sl_stream_forced) {
@@ -511,9 +554,13 @@ BEGIN {
                 && sl !~ /spa/ \
                 && sl !~ /eng/) delete sl_stream_forced[sl]
             else if (sl != pref_lang) {
-                s_maps = s_maps " -map 1:" sl_stream_forced[sl] " -disposition:" current_index " none " "-metadata:s:" current_index \
+                s_maps = s_maps " -map 1:" sl_stream_forced[sl] \
+                    " -disposition:" current_index " none " \
+                    "-metadata:s:" current_index                        \
                 " title=\"["sl"] Forzados " sl_codec_short_forced[sl] "\""
-                printf "language=%s,codec_short=%s,codec_long=%s,frames=%s\n",sl,sl_codec_short_forced[sl],sl_codec_long_forced[sl],sl_frames_forced[sl]
+                printf ("language=%s,codec_short=%s,codec_long=%s,frames=%s\n",
+                        sl,sl_codec_short_forced[sl],sl_codec_long_forced[sl],
+                        sl_frames_forced[sl])
                 current_index++
             }
         }
