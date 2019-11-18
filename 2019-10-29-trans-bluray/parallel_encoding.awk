@@ -54,6 +54,19 @@ function getopt(argc, argv, options,    thisopt, i) {
     return thisopt
 }
 
+function dirname(path) {
+    n = patsplit(path,f,"[^/]+")
+    if (n) {
+        dir = ""
+        for (i = 1; i < n; i++) {
+            dir = dir "/" f[i]
+        }
+        return dir
+    }
+    else
+        return path
+}
+
 function basename(path) {
     n = patsplit(path,f,"[^/]+")
     if (n)
@@ -100,6 +113,12 @@ function setSub(lang,streamId,codec,cname,frames) {
     sl_codec_short[lang] = codec
     sl_codec_long[lang] = cname
 }
+function setSubForced(lang,streamId,codec,cname,frames) {
+    sl_stream_forced[lang] = streamId
+    sl_frames_forced[lang] = frames
+    sl_codec_short_forced[lang] = codec
+    sl_codec_long_forced[lang] = cname
+}
 
 function getOpusChannelFamily(channels) {
     if (channels <= 2) return 0
@@ -114,9 +133,8 @@ function min(a,b) {
     return (a < b) ? a : b;
 }
 
-function getBitrate(curr_bitrate) {
-    if (curr_bitrate !~ /N\/A/) return int(min(1024000,curr_bitrate)/2)
-    else return 512000
+function getBitrate(channels) {
+    return channels*64000
 }
 
 function setStartDuration(chunk,start,duration) {
@@ -300,7 +318,7 @@ BEGIN {
     "xdg-user-dir VIDEOS" | getline videos_dir
     filename = gensub(/ /,"_","g",gensub(/\.mkv$/,"","g",basename(input_file))) "_out"
     if (length(output_file) == 0) transcoded_file = videos_dir "/" filename "_transcoded.mkv"
-    else transcoded_file = gensub(/ /,"_","g",output_file)
+    else transcoded_file = dirname(output_file) "/" gensub(/ /,"_","g",basename(output_file))
     ffprobe_cmd = "ffprobe -loglevel quiet -show_streams -show_format -show_chapters -of csv=nk=0 " "'"input_file"'"
 
     while((ffprobe_cmd | getline) > 0)
@@ -361,7 +379,8 @@ BEGIN {
                         channels = kv[2]
                         break;
                     case "channel_layout":
-                        pos = match(kv[2],/[[:digit:]]+\.[[:digit:]]+/,arr)
+                        pos = match(kv[2],/([[:digit:]]+\.[[:digit:]]+|stereo)/,arr)
+                        if (arr[0] == "stereo") arr[0] = "2.0"
                         ch_dist = arr[0]
                         break;
                     case "bit_rate":
@@ -381,7 +400,7 @@ BEGIN {
 
             if (codec_type ~ /audio/) {
                 if (lang in al_stream) {
-                    if ((streamId != al_stream[lang]) && (al_bitrate[lang] < bitrate) && (al_channels[lang] <= channels) && ( codec_short ~ /dts/ || profile ~ /DTS-HD/)) {
+                    if ((streamId != al_stream[lang]) && (al_channels[lang] < channels)) {
                         setAudio(lang,streamId,bitrate,channels,ch_dist,freq,codec_short,codec_long,profile)
                     }
                 } else {
@@ -393,8 +412,13 @@ BEGIN {
                 if (lang in sl_stream) {
                     if (codec_short ~ /hdmv/ && sl_codec_short[lang] !~ /hdmv/) {
                         setSub(lang,streamId,codec_short,codec_long,frames)
-                    } else if (codec_short == sl_codec_short[lang] && frames > sl_frames[lang]) {
-                        setSub(lang,streamId,codec_short,codec_long,frames)
+                    } else if (codec_short == sl_codec_short[lang]) {
+                        if (frames > sl_frames[lang]) {
+                            setSubForced(lang,sl_stream[lang],sl_codec_short[lang],sl_codec_long[lang],sl_frames[lang])
+                            setSub(lang,streamId,codec_short,codec_long,frames)
+                        } else if (frames < sl_frames[lang]) {
+                            setSubForced(lang,streamId,codec_short,codec_long,frames)
+                        }
                     }
                 } else setSub(lang,streamId,codec_short,codec_long,frames)
             }
@@ -428,12 +452,12 @@ BEGIN {
         if (pref_lang in al_stream) {
             a_maps = a_maps " -codec:"current_index " libopus -map 0:"\
                 al_stream[pref_lang] " -b:"current_index \
-                " " getBitrate(al_bitrate[pref_lang]) " -ac:1 " \
-                al_channels[pref_lang] " -mapping_family:"current_index \
+                " " getBitrate(al_channels[pref_lang]) " -ac:1 " \
+                al_channels[pref_lang] " -mapping_family:" current_index \
                 " " getOpusChannelFamily(al_channels[pref_lang]) \
-                " -disposition:" al_stream[pref_lang] " default " \
-                " -metadata:"al_stream[pref_lang] " title=\"["pref_lang"] Opus " \
-                al_ch_dist[pref_lang] "ch " \
+                " -disposition:" current_index " default " \
+                " -metadata:s:" current_index " title=\"["pref_lang"] Opus " \
+                al_ch_dist[pref_lang] " " \
                 freq/1000 "kHz\" "
             current_index++
         }
@@ -441,14 +465,14 @@ BEGIN {
         for (al in al_stream) {
             printf "language=%s,bitrate=%s,channels=%d,codec_short=%s,codec_long=%s,profile=%s\n",al,al_bitrate[al],al_channels[al],al_codec_short[al],al_codec_long[al],al_profile[al]
             if (al != pref_lang) {
-                opus_bitrate = getBitrate(al_bitrate[al])
+                opus_bitrate = getBitrate(al_channels[al])
                 a_maps = a_maps " -codec:" current_index " libopus -map 0:" al_stream[al] " -b:" current_index " " \
                     opus_bitrate " -ac:" current_index " " al_channels[al] \
                     " -mapping_family:" current_index " " getOpusChannelFamily(al_channels[al]) \
-                    " -disposition:" al_stream[al] " none " \
-                    " -metadata:"al_stream[al] \
+                    " -disposition:" current_index " none " \
+                    " -metadata:s:" current_index \
                     " title=\"["al"] Opus " \
-                    al_ch_dist[al] "ch " \
+                    al_ch_dist[al] " " \
                     freq/1000 "kHz\" "
                 current_index++
             }
@@ -457,9 +481,11 @@ BEGIN {
     if (length(sl_stream) > 0) {
         print "Selected subtitle streams:"
         if (pref_lang in sl_stream) {
-            s_maps = s_maps " -map 1:" sl_stream[pref_lang] " -disposition:" sl_stream[pref_lang] " default " "-metadata:"sl_stream[pref_lang] \
+            s_maps = s_maps " -map 1:" sl_stream[pref_lang] " -disposition:" sl_stream[pref_lang] " default " "-metadata:s:"sl_stream[pref_lang] \
                 " title=\"["pref_lang"] " sl_codec_short[pref_lang] "\""
+            current_index++
         }
+
         printf "language=%s,codec_short=%s,codec_long=%s,frames=%s\n",pref_lang,sl_codec_short[pref_lang],sl_codec_long[pref_lang],sl_frames[pref_lang]
         for (sl in sl_stream) {
             if (!(sl in al_stream) \
@@ -467,9 +493,28 @@ BEGIN {
                 && sl !~ /spa/ \
                 && sl !~ /eng/) delete sl_stream[sl]
             else if (sl != pref_lang) {
-                s_maps = s_maps " -map 1:" sl_stream[sl] " -disposition:" sl_stream[sl] " none " "-metadata:"sl_stream[sl] \
+                s_maps = s_maps " -map 1:" sl_stream[sl] " -disposition:" current_index " none " "-metadata:s:" current_index \
                 " title=\"["sl"] " sl_codec_short[sl] "\""
                 printf "language=%s,codec_short=%s,codec_long=%s,frames=%s\n",sl,sl_codec_short[sl],sl_codec_long[sl],sl_frames[sl]
+                current_index++
+            }
+        }
+        if (pref_lang in sl_stream_forced) {
+            printf "language=%s,codec_short=%s,codec_long=%s,frames=%s\n",pref_lang,sl_codec_short_forced[pref_lang],sl_codec_long_forced[pref_lang],sl_frames_forced[pref_lang]
+            s_maps = s_maps " -map 1:" sl_stream_forced[pref_lang] " -disposition:" current_index " none " "-metadata:s:" current_index \
+            " title=\"["pref_lang"] Forzados " sl_codec_short_forced[pref_lang] "\""
+            current_index++
+        }
+        for (sl in sl_stream_forced) {
+            if (!(sl in al_stream) \
+                && sl !~ /cat/ \
+                && sl !~ /spa/ \
+                && sl !~ /eng/) delete sl_stream_forced[sl]
+            else if (sl != pref_lang) {
+                s_maps = s_maps " -map 1:" sl_stream_forced[sl] " -disposition:" current_index " none " "-metadata:s:" current_index \
+                " title=\"["sl"] Forzados " sl_codec_short_forced[sl] "\""
+                printf "language=%s,codec_short=%s,codec_long=%s,frames=%s\n",sl,sl_codec_short_forced[sl],sl_codec_long_forced[sl],sl_frames_forced[sl]
+                current_index++
             }
         }
     }
