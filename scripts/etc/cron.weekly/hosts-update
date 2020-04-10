@@ -1,6 +1,6 @@
 #!/bin/bash
 BL_FILE=/tmp/hosts-zero
-BL_URL=https://someonewhocares.org/hosts/zero/hosts
+BL_URL=https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts
 
 MSG_INFO="El fitxer /etc/hosts ha estat actualitzat."
 MSG_ERR="No s'ha pogut actualitzar el fitxer /etc/hosts. Consulta /var/syslog."
@@ -107,3 +107,4 @@ fi
 # https://adaway.org/hosts.txt
 # https://pgl.yoyo.org/adservers/serverlist.php?hostformat=hosts&showintro=1&mimetype=plaintext
 # https://www.malwaredomainlist.com/hostslist/hosts.txt
+# https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts
