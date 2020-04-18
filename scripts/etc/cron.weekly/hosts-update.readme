@@ -1,0 +1,9 @@
+hosts-update.pcre -> Elapsed time: .219753443 s
+hosts-update.ere -> Elapsed time: .345723933 s
+hosts-update.gawk -> Elapsed time: 0.218315 s
+
+PCRE mes rapid que ERE? :S
+
+Regular Expression Matching Can Be Simple And Fast
+(but is slow in Java, Perl, PHP, Python, Ruby, ...)
+https://swtch.com/~rsc/regexp/regexp1.html
