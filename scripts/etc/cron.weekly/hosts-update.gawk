@@ -161,10 +161,11 @@ BEGIN {
     if (system(wget_cmd)) fail()
 
     STARTT = gettimeofday()
-    FS="([[:space:]]|[[:cntrl:]])+"
+    FS="[[:space:][:cntrl:]]+"
     while ((getline < BL_FILE) > 0) {
         if ($0 ~ /^[^#[:cntrl:][:space:]]+/) {
-            if (tolower($1) !~ REGEX_IP && $1 !~ REGEX_WHITELIST) {
+            ip = tolower($1)
+            if (ip !~ REGEX_IP && ip !~ REGEX_WHITELIST) {
                 fail()
             }
         }
@@ -182,6 +183,8 @@ BEGIN {
     close(BL_FILE)
     rm_cmd = "rm " BL_FILE
     res = system(rm_cmd)
+    log_cmd = system("/usr/bin/logger -p 'cron.info' "LOG_ID\
+                 ": 'Hosts file updated with '"BL_URL)
     notify_users(MSG_INFO,"low")
     exit 0
 }

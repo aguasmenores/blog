@@ -1,6 +1,6 @@
 hosts-update.pcre -> Elapsed time: .219753443 s
 hosts-update.ere -> Elapsed time: .345723933 s
-hosts-update.gawk -> Elapsed time: 0.218315 s
+hosts-update.gawk -> Elapsed time: 0.183097 s
 
 PCRE mes rapid que ERE? :S
 
