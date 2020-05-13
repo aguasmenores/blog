@@ -7,3 +7,11 @@ PCRE mes rapid que ERE? :S
 Regular Expression Matching Can Be Simple And Fast
 (but is slow in Java, Perl, PHP, Python, Ruby, ...)
 https://swtch.com/~rsc/regexp/regexp1.html
+
+
+Segons run-parts(8) el fitxer ha de tenir un nom
+amb caracteres ASCII majúscules i minúscules, dígits ASCII,
+guions baixos ASCII, i signes de resta ASCII. No pot haver punts. Per
+tant l'extensió que presenten en aquest repositori (.pcre, .ere, .gawk)
+s'ha d'esborrar.
+
