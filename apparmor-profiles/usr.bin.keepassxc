@@ -1,0 +1,32 @@
+#include <tunables/global>
+
+/usr/bin/keepassxc {
+  #include <abstractions/X>
+  #include <abstractions/audio>
+  #include <abstractions/base>
+  #include <abstractions/dbus>
+  #include <abstractions/dbus-session>
+  #include <abstractions/dbus-accessibility>
+  #include <abstractions/evince>
+  #include <abstractions/nameservice>
+  #include <abstractions/ubuntu-browsers.d/ubuntu-integration>
+
+  /sys/devices/pci0000:00/** r,
+  /usr/bin/keepassxc mr,
+  owner @{HOME}/ r,
+  owner @{HOME}/* rwl,
+  owner @{HOME}/.cache/* rwk,
+  owner @{HOME}/.cache/fontconfig/* r,
+  owner @{HOME}/.cache/mesa_shader_cache/index rw,
+  owner @{HOME}/.config/** r,
+  owner @{HOME}/.config/keepassxc/* rwl,
+  owner @{HOME}/.config/keepassxc/keepassxc.ini rw,
+  owner @{HOME}/.config/keepassxc/keepassxc.ini.lock rwk,
+  owner @{HOME}/.gtkrc-2.0 r,
+  owner @{HOME}/.local/share/** r,
+  owner @{HOME}/.local/share/recently-used.xbel rw,
+  owner @{HOME}/.mozilla/native-messaging-hosts/org.keepassxc.keepassxc_browser.json w,
+  owner /run/user/[0-9]*/** rw,
+  network netlink dgram,
+  deny ptrace (trace),
+}
