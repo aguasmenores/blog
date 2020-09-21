@@ -1,0 +1,6 @@
+opensc-dnie (0.20.0-3) unstable; urgency=high
+
+   * Fork of opensc for Debian.
+   * Adds new keys for DNIe 3.0 (Spanish ID card)
+
+ -- Anonymous <anonymous@anonymous.org>  Sun, 20 Sep 2020 16:20:00 +0100
